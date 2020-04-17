@@ -18,6 +18,7 @@ import {
 
 class ProjectManager {
   private repoParser: RepoParser | null = null;
+  private knownEmpty = false;
   private testLoaders: TestLoader[] = [];
   private disposables: IDisposable[] = [];
   private projectsChangedEmitter: vscode.EventEmitter<ProjectsChangedEvent>;
@@ -35,11 +36,18 @@ class ProjectManager {
     return this.projectsChangedEmitter.event;
   }
 
-  public async getTestState(): Promise<WorkspaceTestState> {
+  public async getTestState(): Promise<WorkspaceTestState | undefined> {
+    if(this.knownEmpty) { return undefined; }
     if (!this.repoParser) {
       this.repoParser = await getRepoParser(this.workspace.uri.fsPath, this.log);
-      this.disposables.push(this.repoParser.projectChange(this.handleProjectChange));
+      if (this.repoParser) {
+        this.knownEmpty = true
+        this.disposables.push(this.repoParser.projectChange(this.handleProjectChange));
+      } else {
+        return undefined;
+      }
     }
+
     if (!this.repoParser) {
       this.log.error("No RepoParser available.");
       return { suite: this.workspaceTestState };

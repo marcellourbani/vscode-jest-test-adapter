@@ -84,10 +84,13 @@ export default class JestTestAdapter implements TestAdapter {
       this.testsEmitter.fire({ type: "started" });
 
       const state = await this.projectManager.getTestState();
-      this.tree = state.suite;
-      const suite = mapWorkspaceRootToSuite(this.tree);
-
-      this.testsEmitter.fire({ suite, type: "finished" });
+      if (state) {
+        this.tree = state.suite;
+        const suite = mapWorkspaceRootToSuite(this.tree);
+        this.testsEmitter.fire({ suite, type: "finished" });
+      } else {
+        this.testsEmitter.fire({ type: "finished" });
+      }
     } catch (error) {
       this.log.error("Error loading tests", JSON.stringify(error));
       this.testsEmitter.fire({ type: "finished", errorMessage: JSON.stringify(error) });
